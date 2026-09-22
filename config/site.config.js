@@ -14,7 +14,7 @@ window.SITE_CONFIG = {
   // Point this at wherever you deploy the backend/ folder (Render,
   // Railway, Fly.io, etc). No trailing slash. See backend/README
   // and the main README's "Deploying" section.
-  apiBaseUrl: "https://your-backend-host.example.com",
+  apiBaseUrl: "https://heyyth-back.onrender.com",
 
   // ---- Identity ----
   name: "heyyth",
