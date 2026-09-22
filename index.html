@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>heyyth.</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💌</text></svg>" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22></text></svg>" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css" />
@@ -31,6 +31,52 @@
   </div>
 </section>
 
+
+<!-- Loading failsafe: keeps the loading screen independent of backend/API status. -->
+<script>
+(() => {
+  const loading = document.getElementById("view-loading");
+  const fill = document.getElementById("progress-fill");
+  const pct = document.getElementById("loading-pct");
+  const msg = document.getElementById("loading-msg");
+  if (!loading || !fill || !pct || !msg) return;
+
+  const messages = [
+    "loading...",
+    "doing something important...",
+    "probably...",
+    "almost there...",
+    "okay actually almost there..."
+  ];
+  let i = 0;
+  let value = 0;
+  msg.textContent = messages[0];
+
+  const timer = setInterval(() => {
+    i = (i + 1) % messages.length;
+    msg.textContent = messages[i];
+  }, 500);
+
+  const progress = setInterval(() => {
+    value = Math.min(100, value + 10);
+    fill.style.width = value + "%";
+    pct.textContent = value + "%";
+    if (value >= 100) {
+      clearInterval(progress);
+      clearInterval(timer);
+      msg.textContent = "done. probably.";
+      setTimeout(() => {
+        loading.classList.add("fade-out");
+        setTimeout(() => {
+          loading.classList.remove("active");
+          document.getElementById("view-login")?.classList.add("active");
+        }, 500);
+      }, 250);
+    }
+  }, 180);
+})();
+</script>
+
 <!-- ===================== LOGIN ===================== -->
 <section id="view-login" class="view view-login">
   <form class="login-card" id="login-form" autocomplete="off">
@@ -47,7 +93,7 @@
       <input type="password" id="login-password" required placeholder="something only you know" />
     </label>
 
-    <button type="submit" class="btn btn-primary btn-block" id="login-submit-btn">Enter 💌</button>
+    <button type="submit" class="btn btn-primary btn-block" id="login-submit-btn">Enter</button>
     <p class="login-error" id="login-error"></p>
     <p class="login-note">accounts live in a private database — not this browser — so you can log in from anywhere.</p>
   </form>
