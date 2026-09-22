@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SONICFLOW</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎧</text></svg>" />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --acc: #ff5fa8; --acc2: #7c9bff; --bg: #0a0714; --panel: #150f24; --panel2: #1c1430; --border: rgba(255,95,168,0.2); --text: #f1ecff; --dim: #8b81ab; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: radial-gradient(circle at 50% 0%, #1c1230, var(--bg)); color: var(--text); font-family: 'Poppins', sans-serif; }
+  a.back { position: fixed; top: 1.2em; left: 1.2em; color: var(--dim); text-decoration: none; font-size: .8rem; border: 1px solid var(--border); padding: .5em 1em; border-radius: 999px; z-index: 20; background: var(--panel); }
+  a.back:hover { color: var(--acc); border-color: var(--acc); }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 5em 1.5em 8em; }
+  h1 { font-size: 2rem; letter-spacing: 2px; background: linear-gradient(90deg, var(--acc), var(--acc2)); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 0; }
+  .subtitle { color: var(--dim); font-size: .85rem; margin-top: .2em; margin-bottom: 2em; }
+
+  .top-row { display: flex; gap: 1em; margin-bottom: 1.5em; flex-wrap: wrap; }
+  .search { flex: 1; min-width: 200px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: .8em 1em; color: var(--text); outline: none; }
+
+  .layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.4em; }
+  @media (max-width: 850px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 18px; padding: 1.3em; margin-bottom: 1.4em; }
+  .panel h2 { font-size: .95rem; letter-spacing: 1px; color: var(--acc); margin: 0 0 1em; }
+
+  .track-row {
+    display: flex; align-items: center; gap: 1em; padding: .6em .5em; border-radius: 10px; cursor: pointer;
+    transition: background .15s;
+  }
+  .track-row:hover { background: var(--panel2); }
+  .track-row.playing { background: var(--panel2); }
+  .track-art {
+    width: 42px; height: 42px; border-radius: 8px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--track-color, var(--acc)), var(--acc2));
+    display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+  }
+  .track-info { flex: 1; min-width: 0; }
+  .track-title { font-weight: 600; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .track-artist { font-size: .78rem; color: var(--dim); }
+  .track-dur { font-size: .78rem; color: var(--dim); }
+  .track-plays { font-size: .72rem; color: var(--dim); min-width: 60px; text-align: right; }
+
+  .leaderboard-row { display: flex; justify-content: space-between; padding: .5em 0; border-bottom: 1px dashed var(--border); font-size: .85rem; }
+  .leaderboard-row:last-child { border-bottom: none; }
+  .rank { color: var(--acc); font-weight: 700; margin-right: .6em; }
+
+  /* now-playing bar */
+  .player-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; background: var(--panel);
+    border-top: 1px solid var(--border); padding: 1em 1.5em; display: flex; align-items: center; gap: 1.2em;
+    flex-wrap: wrap; z-index: 30;
+  }
+  .np-art { width: 46px; height: 46px; border-radius: 10px; background: linear-gradient(135deg, var(--acc), var(--acc2)); flex-shrink: 0; }
+  .np-info { min-width: 140px; }
+  .np-title { font-weight: 600; font-size: .9rem; }
+  .np-artist { font-size: .78rem; color: var(--dim); }
+
+  .controls { display: flex; align-items: center; gap: .8em; }
+  .ctrl-btn { background: var(--panel2); border: 1px solid var(--border); color: var(--text); width: 38px; height: 38px; border-radius: 50%; font-size: .9rem; cursor: pointer; }
+  .ctrl-btn.play { width: 46px; height: 46px; background: linear-gradient(135deg, var(--acc), var(--acc2)); border: none; }
+  .ctrl-btn:hover { border-color: var(--acc); }
+
+  .progress-wrap { flex: 1; min-width: 160px; display: flex; align-items: center; gap: .6em; font-size: .72rem; color: var(--dim); }
+  .progress-track { flex: 1; height: 5px; background: var(--panel2); border-radius: 999px; cursor: pointer; position: relative; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--acc), var(--acc2)); border-radius: 999px; width: 0%; }
+
+  .volume-wrap { display: flex; align-items: center; gap: .5em; }
+  .volume-wrap input { width: 90px; }
+
+  canvas#visualizer { width: 100%; height: 60px; display: block; }
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← back</a>
+
+<div class="wrap">
+  <h1>SONICFLOW</h1>
+  <p class="subtitle">a music player that got out of hand // playing synthesized demo tones — drop real audio files in later if you want</p>
+
+  <div class="top-row">
+    <input type="text" class="search" id="search" placeholder="Search playlist..." />
+  </div>
+
+  <div class="layout">
+    <div>
+      <div class="panel">
+        <h2>Playlist</h2>
+        <div id="playlist"></div>
+      </div>
+      <div class="panel">
+        <h2>Up Next</h2>
+        <div id="queue"></div>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <h2>Visualizer</h2>
+        <canvas id="visualizer"></canvas>
+      </div>
+      <div class="panel">
+        <h2>Leaderboard (most played this session)</h2>
+        <div id="leaderboard"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="player-bar">
+  <div class="np-art" id="np-art"></div>
+  <div class="np-info">
+    <div class="np-title" id="np-title">nothing playing</div>
+    <div class="np-artist" id="np-artist">pick a track</div>
+  </div>
+  <div class="controls">
+    <button class="ctrl-btn" id="prev-btn" title="Previous">⏮</button>
+    <button class="ctrl-btn play" id="play-btn" title="Play/Pause">▶</button>
+    <button class="ctrl-btn" id="next-btn" title="Next">⏭</button>
+  </div>
+  <div class="progress-wrap">
+    <span id="cur-time">0:00</span>
+    <div class="progress-track" id="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    <span id="dur-time">0:00</span>
+  </div>
+  <div class="volume-wrap">
+    🔊 <input type="range" id="volume" min="0" max="100" value="70" />
+  </div>
+</div>
+
+<script>
+(() => {
+  const tracks = [
+    { id: 1, title: "static bloom", artist: "heyyth", duration: 22, freq: 220, wave: "sine", color: "#ff5fa8" },
+    { id: 2, title: "3am thoughts", artist: "heyyth", duration: 18, freq: 174, wave: "triangle", color: "#7c9bff" },
+    { id: 3, title: "cold coffee", artist: "heyyth", duration: 26, freq: 330, wave: "sine", color: "#ffb6d9" },
+    { id: 4, title: "vault theme", artist: "heyyth", duration: 20, freq: 146, wave: "sawtooth", color: "#c792ff" },
+    { id: 5, title: "loading screen lofi", artist: "heyyth", duration: 24, freq: 262, wave: "triangle", color: "#00d1a0" },
+    { id: 6, title: "why does this exist", artist: "heyyth", duration: 16, freq: 196, wave: "square", color: "#ffd166" }
+  ];
+
+  const plays = {}; // id -> play count (session leaderboard)
+  let currentIndex = -1;
+  let isPlaying = false;
+  let audioCtx, oscillator, gainNode, analyser;
+  let startTime = 0;
+  let pausedAt = 0;
+  let rafId = null;
+
+  function fmtTime(s) {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${String(sec).padStart(2, "0")}`;
+  }
+
+  function renderPlaylist(filter = "") {
+    const el = document.getElementById("playlist");
+    el.innerHTML = "";
+    tracks
+      .filter((t) => t.title.toLowerCase().includes(filter.toLowerCase()) || t.artist.toLowerCase().includes(filter.toLowerCase()))
+      .forEach((t) => {
+        const idx = tracks.indexOf(t);
+        const row = document.createElement("div");
+        row.className = "track-row" + (idx === currentIndex ? " playing" : "");
+        row.style.setProperty("--track-color", t.color);
+        row.innerHTML = `
+          <div class="track-art">${idx === currentIndex && isPlaying ? "🎵" : "♪"}</div>
+          <div class="track-info">
+            <div class="track-title">${t.title}</div>
+            <div class="track-artist">${t.artist}</div>
+          </div>
+          <div class="track-dur">${fmtTime(t.duration)}</div>
+          <div class="track-plays">${plays[t.id] || 0} plays</div>`;
+        row.addEventListener("click", () => loadTrack(idx, true));
+        el.appendChild(row);
+      });
+  }
+
+  function renderQueue() {
+    const el = document.getElementById("queue");
+    el.innerHTML = "";
+    const upcoming = [];
+    for (let i = 1; i <= 3; i++) {
+      upcoming.push(tracks[(currentIndex + i + tracks.length) % tracks.length]);
+    }
+    upcoming.forEach((t) => {
+      const row = document.createElement("div");
+      row.className = "track-row";
+      row.innerHTML = `<div class="track-art">♪</div><div class="track-info"><div class="track-title">${t.title}</div><div class="track-artist">${t.artist}</div></div><div class="track-dur">${fmtTime(t.duration)}</div>`;
+      el.appendChild(row);
+    });
+  }
+
+  function renderLeaderboard() {
+    const el = document.getElementById("leaderboard");
+    const sorted = [...tracks].filter((t) => plays[t.id]).sort((a, b) => (plays[b.id] || 0) - (plays[a.id] || 0));
+    el.innerHTML = "";
+    if (!sorted.length) {
+      el.innerHTML = `<div style="color:var(--dim); font-size:.85rem;">nothing played yet. press play on something.</div>`;
+      return;
+    }
+    sorted.slice(0, 5).forEach((t, i) => {
+      const row = document.createElement("div");
+      row.className = "leaderboard-row";
+      row.innerHTML = `<span><span class="rank">#${i + 1}</span>${t.title}</span><span>${plays[t.id]} plays</span>`;
+      el.appendChild(row);
+    });
+  }
+
+  function ensureAudioCtx() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 128;
+      analyser.connect(audioCtx.destination);
+    }
+  }
+
+  function stopOscillator() {
+    if (oscillator) {
+      try { oscillator.stop(); } catch (e) {}
+      oscillator.disconnect();
+      oscillator = null;
+    }
+    if (gainNode) { gainNode.disconnect(); gainNode = null; }
+    if (rafId) cancelAnimationFrame(rafId);
+  }
+
+  function loadTrack(index, autoplay) {
+    stopOscillator();
+    currentIndex = index;
+    pausedAt = 0;
+    const t = tracks[currentIndex];
+    document.getElementById("np-title").textContent = t.title;
+    document.getElementById("np-artist").textContent = t.artist;
+    document.getElementById("np-art").style.background = `linear-gradient(135deg, ${t.color}, #7c9bff)`;
+    document.getElementById("dur-time").textContent = fmtTime(t.duration);
+    document.getElementById("cur-time").textContent = "0:00";
+    document.getElementById("progress-fill").style.width = "0%";
+    renderPlaylist(document.getElementById("search").value);
+    renderQueue();
+    if (autoplay) play();
+  }
+
+  function play() {
+    if (currentIndex === -1) { loadTrack(0, true); return; }
+    ensureAudioCtx();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    const t = tracks[currentIndex];
+
+    oscillator = audioCtx.createOscillator();
+    oscillator.type = t.wave;
+    oscillator.frequency.value = t.freq;
+
+    // gentle vibrato so it doesn't sound like a smoke alarm
+    const lfo = audioCtx.createOscillator();
+    lfo.frequency.value = 4;
+    const lfoGain = audioCtx.createGain();
+    lfoGain.gain.value = 3;
+    lfo.connect(lfoGain);
+    lfoGain.connect(oscillator.frequency);
+    lfo.start();
+
+    gainNode = audioCtx.createGain();
+    gainNode.gain.value = document.getElementById("volume").value / 100 * 0.15;
+    oscillator.connect(gainNode);
+    gainNode.connect(analyser);
+    oscillator.start();
+
+    startTime = audioCtx.currentTime - pausedAt;
+    const remaining = t.duration - pausedAt;
+    oscillator.stop(audioCtx.currentTime + remaining);
+    oscillator._lfo = lfo;
+    oscillator.onended = () => { if (isPlaying) next(); };
+
+    isPlaying = true;
+    document.getElementById("play-btn").textContent = "⏸";
+    plays[t.id] = (plays[t.id] || 0) + (pausedAt === 0 ? 1 : 0);
+    renderLeaderboard();
+    renderPlaylist(document.getElementById("search").value);
+    tick();
+  }
+
+  function pause() {
+    if (!oscillator) return;
+    pausedAt = audioCtx.currentTime - startTime;
+    stopOscillator();
+    isPlaying = false;
+    document.getElementById("play-btn").textContent = "▶";
+    renderPlaylist(document.getElementById("search").value);
+  }
+
+  function next() {
+    loadTrack((currentIndex + 1) % tracks.length, true);
+  }
+  function prev() {
+    loadTrack((currentIndex - 1 + tracks.length) % tracks.length, true);
+  }
+
+  function tick() {
+    if (!isPlaying || currentIndex === -1) return;
+    const t = tracks[currentIndex];
+    const elapsed = Math.min(audioCtx.currentTime - startTime, t.duration);
+    document.getElementById("cur-time").textContent = fmtTime(elapsed);
+    document.getElementById("progress-fill").style.width = (elapsed / t.duration * 100) + "%";
+    drawVisualizer();
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function drawVisualizer() {
+    const canvas = document.getElementById("visualizer");
+    const ctx = canvas.getContext("2d");
+    if (canvas.width !== canvas.clientWidth) canvas.width = canvas.clientWidth;
+    if (canvas.height !== canvas.clientHeight) canvas.height = canvas.clientHeight;
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    if (!analyser) return;
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(data);
+    const barWidth = w / data.length;
+    for (let i = 0; i < data.length; i++) {
+      const barHeight = (data[i] / 255) * h;
+      const grad = ctx.createLinearGradient(0, h - barHeight, 0, h);
+      grad.addColorStop(0, "#ff5fa8");
+      grad.addColorStop(1, "#7c9bff");
+      ctx.fillStyle = grad;
+      ctx.fillRect(i * barWidth, h - barHeight, barWidth - 2, barHeight);
+    }
+  }
+
+  document.getElementById("play-btn").addEventListener("click", () => (isPlaying ? pause() : play()));
+  document.getElementById("next-btn").addEventListener("click", next);
+  document.getElementById("prev-btn").addEventListener("click", prev);
+  document.getElementById("volume").addEventListener("input", (e) => {
+    if (gainNode) gainNode.gain.value = e.target.value / 100 * 0.15;
+  });
+  document.getElementById("progress-track").addEventListener("click", (e) => {
+    if (currentIndex === -1) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    pausedAt = pct * tracks[currentIndex].duration;
+    const wasPlaying = isPlaying;
+    stopOscillator();
+    isPlaying = false;
+    if (wasPlaying) play();
+    else {
+      document.getElementById("cur-time").textContent = fmtTime(pausedAt);
+      document.getElementById("progress-fill").style.width = (pct * 100) + "%";
+    }
+  });
+  document.getElementById("search").addEventListener("input", (e) => renderPlaylist(e.target.value));
+
+  renderPlaylist();
+  renderQueue();
+  renderLeaderboard();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BUILDCORE</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛠️</text></svg>" />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<style>
+  :root { --acc: #7c9bff; --acc2: #00d1a0; --bg: #070a14; --panel: #0f1526; --panel2: #151d34; --border: rgba(124,155,255,0.2); --text: #e9edff; --dim: #7b86ad; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font-family: 'Poppins', sans-serif; }
+  a.back { position: fixed; top: 1.2em; left: 1.2em; color: var(--dim); text-decoration: none; font-size: .8rem; border: 1px solid var(--border); padding: .5em 1em; border-radius: 999px; z-index: 20; background: var(--panel); }
+  a.back:hover { color: var(--acc); border-color: var(--acc); }
+
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 5em 1.5em 4em; }
+  h1 { font-size: 2rem; letter-spacing: 1px; color: var(--acc); margin-bottom: 0; }
+  .subtitle { color: var(--dim); font-size: .85rem; margin: .3em 0 2em; }
+
+  .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 1em; margin-bottom: 1.8em; }
+  .stat-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 1.1em 1.3em; }
+  .stat-card .num { font-size: 1.6rem; font-weight: 700; color: var(--acc2); }
+  .stat-card .lbl { font-size: .78rem; color: var(--dim); }
+
+  .layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.4em; }
+  @media (max-width: 850px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 18px; padding: 1.3em; margin-bottom: 1.4em; }
+  .panel h2 { font-size: .95rem; letter-spacing: 1px; color: var(--acc); margin: 0 0 1em; }
+
+  .project-card { background: var(--panel2); border: 1px solid var(--border); border-radius: 14px; padding: 1em 1.2em; margin-bottom: .9em; }
+  .project-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: .5em; }
+  .project-name { font-weight: 600; }
+  .badge { font-size: .68rem; padding: .25em .7em; border-radius: 999px; font-weight: 600; }
+  .badge-ok { background: rgba(0,209,160,0.15); color: var(--acc2); }
+  .badge-run { background: rgba(124,155,255,0.15); color: var(--acc); }
+  .badge-fail { background: rgba(255,95,95,0.15); color: #ff6f6f; }
+  .bar-track { height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; transition: width .3s linear; background: linear-gradient(90deg, var(--acc), var(--acc2)); }
+  .project-meta { display: flex; justify-content: space-between; font-size: .74rem; color: var(--dim); margin-top: .4em; }
+  .run-btn { background: var(--panel); border: 1px solid var(--border); color: var(--text); font-size: .72rem; padding: .35em .8em; border-radius: 8px; margin-top: .6em; }
+  .run-btn:hover { border-color: var(--acc); color: var(--acc); }
+
+  .activity-feed { font-family: 'JetBrains Mono', monospace; font-size: .78rem; max-height: 380px; overflow-y: auto; }
+  .activity-feed div { padding: .35em 0; border-bottom: 1px dashed var(--border); color: var(--dim); }
+  .activity-feed div .t { color: var(--acc2); }
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← back</a>
+
+<div class="wrap">
+  <h1>BUILDCORE</h1>
+  <p class="subtitle">a fake build dashboard for fake builds // click "run build" on anything, it's satisfying</p>
+
+  <div class="stat-row">
+    <div class="stat-card"><div class="num" id="stat-total">0</div><div class="lbl">Total builds today</div></div>
+    <div class="stat-card"><div class="num" id="stat-success">100%</div><div class="lbl">Success rate</div></div>
+    <div class="stat-card"><div class="num" id="stat-active">0</div><div class="lbl">Active pipelines</div></div>
+    <div class="stat-card"><div class="num">5</div><div class="lbl">Projects tracked</div></div>
+  </div>
+
+  <div class="layout">
+    <div class="panel">
+      <h2>Projects</h2>
+      <div id="projects"></div>
+    </div>
+    <div class="panel">
+      <h2>Activity Feed</h2>
+      <div class="activity-feed" id="feed"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const projects = [
+    { name: "heyyth-site", status: "ok", progress: 100, builds: 42, lastRun: "3m ago" },
+    { name: "cyne-core", status: "ok", progress: 100, builds: 17, lastRun: "1h ago" },
+    { name: "sonicflow-engine", status: "run", progress: 0, builds: 8, lastRun: "running..." },
+    { name: "archive-index", status: "ok", progress: 100, builds: 29, lastRun: "yesterday" },
+    { name: "experimental-lab", status: "fail", progress: 63, builds: 5, lastRun: "6h ago" }
+  ];
+
+  let totalBuilds = projects.reduce((a, p) => a + p.builds, 0);
+  let activePipelines = 0;
+
+  function badgeClass(status) {
+    return status === "ok" ? "badge-ok" : status === "run" ? "badge-run" : "badge-fail";
+  }
+  function badgeText(status) {
+    return status === "ok" ? "PASSING" : status === "run" ? "RUNNING" : "FAILED";
+  }
+
+  function renderProjects() {
+    const el = document.getElementById("projects");
+    el.innerHTML = "";
+    projects.forEach((p, i) => {
+      const card = document.createElement("div");
+      card.className = "project-card";
+      card.innerHTML = `
+        <div class="project-top">
+          <span class="project-name">${p.name}</span>
+          <span class="badge ${badgeClass(p.status)}">${badgeText(p.status)}</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:${p.progress}%"></div></div>
+        <div class="project-meta"><span>${p.builds} builds</span><span>${p.lastRun}</span></div>
+        <button class="run-btn" data-i="${i}">▶ run build</button>`;
+      el.appendChild(card);
+    });
+    el.querySelectorAll(".run-btn").forEach((btn) => {
+      btn.addEventListener("click", () => runBuild(parseInt(btn.dataset.i)));
+    });
+    document.getElementById("stat-total").textContent = totalBuilds;
+    document.getElementById("stat-active").textContent = activePipelines;
+    const fails = projects.filter((p) => p.status === "fail").length;
+    document.getElementById("stat-success").textContent = Math.round(((projects.length - fails) / projects.length) * 100) + "%";
+  }
+
+  function addFeed(text) {
+    const feed = document.getElementById("feed");
+    const div = document.createElement("div");
+    const time = new Date().toLocaleTimeString();
+    div.innerHTML = `<span class="t">[${time}]</span> ${text}`;
+    feed.prepend(div);
+    while (feed.children.length > 40) feed.removeChild(feed.lastChild);
+  }
+
+  function runBuild(i) {
+    const p = projects[i];
+    if (p.status === "run") return;
+    p.status = "run"; p.progress = 0; p.lastRun = "running...";
+    activePipelines++;
+    addFeed(`build started for <b>${p.name}</b>`);
+    renderProjects();
+
+    const interval = setInterval(() => {
+      p.progress += Math.random() * 20 + 8;
+      if (p.progress >= 100) {
+        p.progress = 100;
+        clearInterval(interval);
+        const willFail = Math.random() < 0.15;
+        p.status = willFail ? "fail" : "ok";
+        p.lastRun = "just now";
+        p.builds++;
+        totalBuilds++;
+        activePipelines--;
+        addFeed(willFail ? `build <b>failed</b> for ${p.name} 💥` : `build <b>passed</b> for ${p.name} ✓`);
+        renderProjects();
+      } else {
+        renderProjects();
+      }
+    }, 350);
+  }
+
+  renderProjects();
+  addFeed("dashboard initialized.");
+})();
+</script>
+</body>
+</html>
